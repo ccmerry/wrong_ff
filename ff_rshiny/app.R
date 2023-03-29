@@ -13,49 +13,83 @@ library(shinydashboard)
 library(nflfastR)
 library(dplyr, warn.conflicts = FALSE)
 library(ggplot2)
+library(shinyWidgets)
 stats <- load_player_stats()
 #dplyr::glimpse(stats)
 #head(stats)
-order_stats <- stats[order(stats["player_name"]),]
-p_names <- c(unique(order_stats[["player_name"]]))
+#order_stats <- stats[order(stats["player_name"]),]
+#p_names <- c(unique(order_stats[["player_name"]]))
+p_names <- c(unique(stats[["player_display_name"]]))
 
+if (interactive()) {
+  
 ui <- dashboardPage(
-  dashboardHeader(title = "Basic dashboard"),
+  
+  dashboardHeader(
+    titleWidth = 350,
+    title = "Fantasy Football Compare"),
+  
   dashboardSidebar(
-    selectInput("p_select", 
-                label = h3("Select Player"), 
-                choices = p_names, 
+    
+    width = 350,
+    
+    multiInput(
+      inputId = "p_id", 
+      label = "Player :",
+      choices = p_names,
+      selected = NULL, 
+      choiceValues = p_names2,
+      width = "100%"
+    ),
+    
+    br(),
+    
+    selectInput("y_stat", 
+                label = h3("Select Stat"), 
+                choices = list("Passing Yards" = "passing_yards", 
+                               "Rushing Yards" = "rushing_yards"), 
                 selected = 1),
     
-    hr(),
-    fluidRow(column(3, verbatimTextOutput("value")))
+    hr()
+    
   ),
+  
   dashboardBody(
+    
+    tags$head(
+    tags$style(HTML('
+            .skin-blue .sidebar a {
+                color: #0000FF;
+            }',
+                              '
+            .skin-blue .search-input {
+                color: #000000;
+            }',
+                              '
+            .skin-blue .multi-wrapper {
+                color: #0000FF;
+            }'
+                              
+    ))),
+    
+    br(),
+    #verbatimTextOutput(outputId = "res"),
+    
     # Boxes need to be put in a row (or column)
     fluidRow(
-      box(plotOutput("plot1", height = 250)),
-      
-      box(
-        title = "Controls",
-        sliderInput("slider", "Number of observations:", 1, 100, 50)
-      )
-    ),
-    #fluidRow(
-      #box(dataTableOutput("table_py"))
-    #)
-    fluidRow(
-      box(plotOutput("plot_py", height = 250))
+      box(plotOutput("plot_py"))
     )
   )
 )
 
 server <- function(input, output) {
-  set.seed(122)
-  histdata <- rnorm(500)
-  stats <- load_player_stats()
   
   p_data <- reactive({
-    stats %>% filter(stats['player_name'] == input$p_select)
+    stats %>% filter(stats$player_display_name %in% input$p_id)
+  })
+  
+  y_var <- reactive({
+    input$y_stat
   })
   
   output$table_py <- renderDataTable({
@@ -63,13 +97,11 @@ server <- function(input, output) {
   })
   
   output$plot_py <- renderPlot({
-    plot(p_data()$week, p_data()$passing_yards)
-  })
-  
-  output$plot1 <- renderPlot({
-    data <- histdata[seq_len(input$slider)]
-    hist(data)
+    ggplot(p_data(), aes(p_data()$week, p_data()[[y_var()]], colour = p_data()$player_display_name)) + 
+      geom_point()
   })
 }
 
-shinyApp(ui, server)
+shinyApp(ui = ui, server = server)
+
+}
