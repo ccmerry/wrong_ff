@@ -16,6 +16,7 @@ library(ggplot2)
 library(shinyWidgets)
 library(stringr)
 library(shinyjs)
+library(tidyr)
 stats <- load_player_stats()
 #dplyr::glimpse(stats)
 #head(stats)
@@ -31,6 +32,45 @@ col_pretty <- data.frame(og_name = c("passing_yards", "passing_tds", "rushing_ya
                          avg_name = c("Pass Yds/Game", "PassTD/Game", "RshYds/Game",
                                       "FntsyPts/Game","FntsyPtsPPR/Game")
 )
+
+col_ls <- c("completions","attempts","passing_yards","passing_tds","interceptions",
+           "sacks","sack_yards","sack_fumbles","sack_fumbles_lost","passing_air_yards",
+           "passing_yards_after_catch","passing_first_downs",
+           "carries","rushing_yards","rushing_tds","rushing_fumbles","rushing_first_downs",
+           "receptions","targets","receiving_yards","receiving_tds",
+           "fantasy_points","fantasy_points_ppr")
+
+col_l <- c("completions","attempts","passing_yards","passing_tds","interceptions",
+           "sacks","sack_yards","sack_fumbles","sack_fumbles_lost","passing_air_yards",
+           "passing_yards_after_catch","passing_first_downs",
+           "carries","rushing_yards","rushing_tds","rushing_fumbles","rushing_first_downs",
+           "fantasy_points","fantasy_points_ppr")
+
+non_qb_ls <- c("carries","rushing_yards","rushing_tds","rushing_first_downs",
+               "receptions","targets","receiving_yards","receiving_tds",
+               "fantasy_points","fantasy_points_ppr")
+
+min_yr = 1
+
+
+#"player_id"                   "player_name"                 "player_display_name"        
+#"position"                    "position_group"              "headshot_url"               
+#"recent_team"                 "season"                      "week"                       
+#"season_type"                 "completions"                 "attempts"                   
+#"passing_yards"               "passing_tds"                 "interceptions"              
+#"sacks"                       "sack_yards"                  "sack_fumbles"               
+#"sack_fumbles_lost"           "passing_air_yards"           "passing_yards_after_catch"  
+#"passing_first_downs"         "passing_epa"                 "passing_2pt_conversions"    
+#"pacr"                        "dakota"                      "carries"                    
+#"rushing_yards"               "rushing_tds"                 "rushing_fumbles"            
+#"rushing_fumbles_lost"        "rushing_first_downs"         "rushing_epa"                
+#"rushing_2pt_conversions"     "receptions"                  "targets"                    
+#"receiving_yards"             "receiving_tds"               "receiving_fumbles"          
+#"receiving_fumbles_lost"      "receiving_air_yards"         "receiving_yards_after_catch"
+#"receiving_first_downs"       "receiving_epa"               "receiving_2pt_conversions"  
+#"racr"                        "target_share"                "air_yards_share"            
+#"wopr"                        "special_teams_tds"           "fantasy_points"             
+#"fantasy_points_ppr" 
 
 
 if (interactive()) {
@@ -64,7 +104,12 @@ if (interactive()) {
                                  "Fantasy Points PPR" = "fantasy_points_ppr"), 
                   selected = 1),
       
-      hr()
+      hr(),
+      
+      checkboxGroupInput("yrCheck", 
+                         label = h3("Season"), 
+                         choices = list("2022" = 2022, "2021" = 2021, "2020" = 2020),
+                         selected = 2022)
       
       ),
     
@@ -158,13 +203,20 @@ if (interactive()) {
             plotOutput("plot_py"))
         ),
       fluidRow(
-        renderPlot("table_py")
-      )
+        box(width = 12,
+            plotOutput("table_py"))
+        )
       )
     )
   
   
-  server <- function(input, output) {
+  server <- function(input, output, session) {
+    
+    observe({
+      if(length(input$yrCheck) < min_yr){
+        updateCheckboxGroupInput(session, "yrCheck", selected= "2022")
+      }
+    })
     
     ######## reactive functions #######
     
@@ -202,17 +254,48 @@ if (interactive()) {
       p_data() %>%
         group_by(p_data()$player_display_name) %>%
         summarise_if(is.numeric, funs(sum))
-      
-      
     })
     
-    observe({colnames(p_sum())[1] <- "new_pname"})
+    p_sum_name <- reactive({
+      p_sum() %>% 
+        rename(new_pname = 1)
+    })
+    
+    p_sum_long <- reactive({
+      p_sum_name() %>% 
+        pivot_longer(
+          cols = "season":"fantasy_points_ppr", 
+          names_to = "stats",
+          values_to = "value"
+          )
+      })
+    
+    long_f <- reactive({
+      p_sum_long() %>%
+        filter(stats %in% col_l)
+    })
+    
+    sg <- reactive({
+      long_f() %>% 
+        group_by(stats) %>% 
+        mutate(perc = value/sum(value))
+    })
+    
+    p_sum_f <- reactive({
+      sg() #%>% 
+        #filter(p_sum_long()$stats == input$y_stat)
+    })
+    
+    
     
     ################################
     
     output$table_py <- renderPlot({
-      ggplot() +
-        geom_col(p_sum(),aes(p_sum()$new_pname, p_sum()$passing_yards))
+      ggplot(p_sum_f(),aes(p_sum_f()$perc, p_sum_f()$stats, fill = p_sum_f()$new_pname)) +
+        geom_col() + 
+        geom_text(aes(label=paste0(p_sum_f()$value)),
+                  position=position_stack(vjust=0.5)) +
+        scale_x_continuous(limits = c(0, 1))
     })
     
     ################################

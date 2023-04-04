@@ -1,10 +1,11 @@
 library(nflfastR)
 library(dplyr, warn.conflicts = FALSE)
 library(ggplot2)
+library(tidyr)
 
 stats <- load_player_stats()
-dplyr::glimpse(stats)
-head(stats)
+#dplyr::glimpse(stats)
+#head(stats)
 colnames(stats)
 p_name <- c(unique(stats[["player_name"]]))
 #order_stats <- stats[order(stats["player_name"]),]
@@ -32,14 +33,41 @@ test <- p_data %>%
   #summarise(Freq = sum("passing_yards", na.rm=TRUE))
 
 colnames(test)[1] <- "new_name"
-colnames(test)
+
+c()
+
+long <- test %>% 
+  pivot_longer(
+    cols = "season":"fantasy_points_ppr", 
+    names_to = "stats",
+    values_to = "value"
+  )
+
+col_l <- c("completions","passing_yards","passing_tds","passing_first_downs",
+           "interceptions","rushing_tds","receptions","rushing_yards",
+           "targets","fantasy_points","fantasy_points_ppr")
+
+long_f <- long %>%
+  filter(stats %in% col_l)
+
+head(long_f)
+
+sg <- long_f %>% 
+  group_by(stats) %>% 
+  mutate(perc = value/sum(value))
+
+head(sg)
+
+sum_group <- long_f %>%
+  sum(value) %>%       
+  group_by(stats) %>%
+  mutate(pct= prop.table(n) * 100)
+
+head(sum_group)
 
 ggplot() +
   geom_col(data = test, aes(x = new_name, y = passing_yards))
 test
 
-df_grp_region = p_data %>% group_by("player_display_name")  %>%
-  summarise(total_sales = sum("passing_yards"),
-            .groups = 'drop')
 
 df_grp_region
