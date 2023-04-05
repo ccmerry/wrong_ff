@@ -17,6 +17,7 @@ library(shinyWidgets)
 library(stringr)
 library(shinyjs)
 library(tidyr)
+library(RColorBrewer)
 stats <- load_player_stats()
 #dplyr::glimpse(stats)
 #head(stats)
@@ -93,7 +94,7 @@ if (interactive()) {
         width = "100%"
         ),
       
-      br(),
+      #br(),
       
       selectInput("y_stat", 
                   label = h3("Select Stat"), 
@@ -104,12 +105,19 @@ if (interactive()) {
                                  "Fantasy Points PPR" = "fantasy_points_ppr"), 
                   selected = 1),
       
-      hr(),
+      #br(),
       
       checkboxGroupInput("yrCheck", 
                          label = h3("Season"), 
                          choices = list("2022" = 2022, "2021" = 2021, "2020" = 2020),
-                         selected = 2022)
+                         selected = 2022),
+      
+      #br(),
+      
+      checkboxGroupInput("chartGraphs", 
+                         label = h3("Season"), 
+                         choices = list("Stat by Week" = "sWeek", "Overview" = "oView"),
+                         selected = "sWeek")
       
       ),
     
@@ -131,6 +139,12 @@ if (interactive()) {
                       '
                       .skin-blue .multi-wrapper {
                       color: #0000FF;
+                      }',
+                      
+                      
+                      '
+                      .content-wrapper, .right-side {
+                      background-color: #7da2d1;
                       }'
                       
                       ))),
@@ -141,73 +155,91 @@ if (interactive()) {
       fluidRow(
         
         ##### First Player #####
-        box(id = "box1",
-            width = 3,
-          fluidRow(align="center",
-                   htmlOutput("name1")
-                   ),
-          fluidRow(align="center",
-                   htmlOutput("picture1")
-                   ),
-          fluidRow(align="center",
-                   textOutput("avg1")
-                   )
+        div(id = "b1_wrap",
+            box(id = "box1",
+                width = 3,
+                fluidRow(align="center",
+                         htmlOutput("name1")
+                         ),
+                fluidRow(align="center",
+                         htmlOutput("picture1")
+                         ),
+                fluidRow(align="center",
+                         textOutput("avg1")
+                         )
+                )
           ),
         
         ##### Second Player #####
-        box(id = "box2",
-            width = 3,
-            fluidRow(align="center",
-                     htmlOutput("name2")
+        div(id = "b2_wrap",
+            box(id = "box2",
+                width = 3,
+                fluidRow(align="center",
+                         htmlOutput("name2")
+                         ),
+                fluidRow(align="center",
+                         htmlOutput("picture2")
+                         ),
+                fluidRow(align="center",
+                         textOutput("avg2")
+                         )
+                )
             ),
-            fluidRow(align="center",
-                     htmlOutput("picture2")
-            ),
-            fluidRow(align="center",
-                     textOutput("avg2")
-            )
-        ),
         
         ##### Third Player #####
-        box(id = "box3",
-            width = 3,
-            fluidRow(align="center",
-                     htmlOutput("name3")
+        div(id = "b3_wrap",
+            box(id = "box3",
+                width = 3,
+                fluidRow(align="center",
+                         htmlOutput("name3")
+                         ),
+                fluidRow(align="center",
+                         htmlOutput("picture3")
+                         ),
+                fluidRow(align="center",
+                         textOutput("avg3")
+                         )
+                )
             ),
-            fluidRow(align="center",
-                     htmlOutput("picture3")
-            ),
-            fluidRow(align="center",
-                     textOutput("avg3")
-            )
-        ),
         
         ##### Fourth Player #####
-        box(id = "box4",
-            width = 3,
-            fluidRow(align="center",
-                     htmlOutput("name4")
-            ),
-            fluidRow(align="center",
-                     htmlOutput("picture4")
-            ),
-            fluidRow(align="center",
-                     textOutput("avg4")
+        div(id = "b4_wrap",
+            box(id = "box4",
+                width = 3,
+                fluidRow(align="center",
+                         htmlOutput("name4")
+                         ),
+                fluidRow(align="center",
+                         htmlOutput("picture4")
+                         ),
+                fluidRow(align="center",
+                         textOutput("avg4")
+                         )
+                )
             )
-        )
       ),
       
       # Boxes need to be put in a row (or column)
       fluidRow(
-        box(width = 12,
+        box(id = "plotPoint",
+            width = 12,
             plotOutput("plot_py"))
         ),
       fluidRow(
-        box(width = 12,
-            plotOutput("table_py"))
+        box(id = "plotBar",
+            width = 12,
+            plotOutput("bar_oview"))
         )
       )
     )
+  
+  
+  
+  
+  ##########################################
+  ################# SERVER #################
+  ##########################################
+  
   
   
   server <- function(input, output, session) {
@@ -272,7 +304,7 @@ if (interactive()) {
     
     long_f <- reactive({
       p_sum_long() %>%
-        filter(stats %in% col_l)
+        filter(value > 0,stats %in% col_l)
     })
     
     sg <- reactive({
@@ -282,53 +314,90 @@ if (interactive()) {
     })
     
     p_sum_f <- reactive({
-      sg() #%>% 
-        #filter(p_sum_long()$stats == input$y_stat)
+      sg() #%>%
+        #filter(value > 0)
     })
     
     
     
     ################################
     
-    output$table_py <- renderPlot({
+    output$bar_oview <- renderPlot({
       ggplot(p_sum_f(),aes(p_sum_f()$perc, p_sum_f()$stats, fill = p_sum_f()$new_pname)) +
         geom_col() + 
         geom_text(aes(label=paste0(p_sum_f()$value)),
-                  position=position_stack(vjust=0.5)) +
-        scale_x_continuous(limits = c(0, 1))
+                  position=position_stack(vjust=0.5),
+                  colour = "white") +
+        scale_x_continuous(limits = c(0, 1)) +
+        theme(panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.ticks.x = element_blank(),
+              axis.text.x = element_blank()) + 
+        scale_fill_manual(values=c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"))
     })
     
     ################################
     
+    #Hide/Show point plot
+    observe({
+      if(length(input$chartGraphs) < min_yr){
+        shinyjs::hide(id = "plotPoint")
+        shinyjs::hide(id = "plotBar")
+      }else{
+        if("sWeek" %in% input$chartGraphs){
+          shinyjs::show(id = "plotPoint")
+        }else{
+          shinyjs::hide(id = "plotPoint")
+        }
+        if("oView" %in% input$chartGraphs){
+          shinyjs::show(id = "plotBar")
+        }else{
+          shinyjs::hide(id = "plotBar")
+        }
+      }
+    })
+    
+    #Hide/Show bar plot
+    #observe({
+      #if(input$chartGraphs == ){
+        #shinyjs::show(id = "plotBar")
+      #}else{
+        #shinyjs::hide(id = "plotBar")
+      #}
+    #})
+    
+    
     observe({
       if(is.na(player_lists()[1])){
-        shinyjs::hide(id = "box1")
+        shinyjs::hide(id = "b1_wrap")
       }else{
-        shinyjs::show(id = "box1")
+        shinyjs::show(id = "b1_wrap")
       }
     })
     
     observe({
       if(is.na(player_lists()[2])){
-        shinyjs::hide(id = "box2")
+        shinyjs::hide(id = "b2_wrap")
       }else{
-        shinyjs::show(id = "box2")
+        shinyjs::show(id = "b2_wrap")
       }
     })
     
     observe({
       if(is.na(player_lists()[3])){
-        shinyjs::hide(id = "box3")
+        shinyjs::hide(id = "b3_wrap")
       }else{
-        shinyjs::show(id = "box3")
+        shinyjs::show(id = "b3_wrap")
       }
     })
     
     observe({
       if(is.na(player_lists()[4])){
-        shinyjs::hide(id = "box4")
+        shinyjs::hide(id = "b4_wrap")
       }else{
-        shinyjs::show(id = "box4")
+        shinyjs::show(id = "b4_wrap")
       }
     })
     
