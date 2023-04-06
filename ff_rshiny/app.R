@@ -94,7 +94,6 @@ if (interactive()) {
         width = "100%"
         ),
       
-      #br(),
       
       selectInput("y_stat", 
                   label = h3("Select Stat"), 
@@ -105,19 +104,17 @@ if (interactive()) {
                                  "Fantasy Points PPR" = "fantasy_points_ppr"), 
                   selected = 1),
       
-      #br(),
       
       checkboxGroupInput("yrCheck", 
                          label = h3("Season"), 
                          choices = list("2022" = 2022, "2021" = 2021, "2020" = 2020),
                          selected = 2022),
       
-      #br(),
       
       checkboxGroupInput("chartGraphs", 
                          label = h3("Season"), 
-                         choices = list("Stat by Week" = "sWeek", "Overview" = "oView"),
-                         selected = "sWeek")
+                         choices = list("Stat by Week" = "sWeek", "Overview" = "oView")
+                         )
       
       ),
     
@@ -144,13 +141,12 @@ if (interactive()) {
                       
                       '
                       .content-wrapper, .right-side {
-                      background-color: #7da2d1;
+                      background-color: #E5E4E2;
                       }'
                       
                       ))),
       
       br(),
-      #verbatimTextOutput(outputId = "res"),
       
       fluidRow(
         
@@ -221,14 +217,18 @@ if (interactive()) {
       
       # Boxes need to be put in a row (or column)
       fluidRow(
-        box(id = "plotPoint",
-            width = 12,
-            plotOutput("plot_py"))
+        div(id = "point_wrap",
+            box(id = "plotPoint",
+                width = 12,
+                plotOutput("plot_pt"))
+            )
         ),
       fluidRow(
-        box(id = "plotBar",
-            width = 12,
-            plotOutput("bar_oview"))
+        div(id = "bar_wrap",
+            box(id = "plotBar",
+                width = 12,
+                plotOutput("bar_oview"))
+            )
         )
       )
     )
@@ -343,18 +343,18 @@ if (interactive()) {
     #Hide/Show point plot
     observe({
       if(length(input$chartGraphs) < min_yr){
-        shinyjs::hide(id = "plotPoint")
-        shinyjs::hide(id = "plotBar")
+        shinyjs::hide(id = "point_wrap")
+        shinyjs::hide(id = "bar_wrap")
       }else{
         if("sWeek" %in% input$chartGraphs){
-          shinyjs::show(id = "plotPoint")
+          shinyjs::show(id = "point_wrap")
         }else{
-          shinyjs::hide(id = "plotPoint")
+          shinyjs::hide(id = "point_wrap")
         }
         if("oView" %in% input$chartGraphs){
-          shinyjs::show(id = "plotBar")
+          shinyjs::show(id = "bar_wrap")
         }else{
-          shinyjs::hide(id = "plotBar")
+          shinyjs::hide(id = "bar_wrap")
         }
       }
     })
@@ -491,7 +491,7 @@ if (interactive()) {
     
     ############################
     
-    output$plot_py <- renderPlot({
+    output$plot_pt <- renderPlot({
       ggplot(p_data(), aes(p_data()$week, p_data()[[y_var()]])) + 
         geom_point(aes(fill = p_data()$player_display_name), size = 5, shape = 21) +
         theme(legend.title=element_blank()) +
