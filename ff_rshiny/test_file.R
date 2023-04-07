@@ -2,10 +2,18 @@ library(nflfastR)
 library(dplyr, warn.conflicts = FALSE)
 library(ggplot2)
 library(tidyr)
+library(magrittr)
 
 stats <- load_player_stats()
 #dplyr::glimpse(stats)
-#head(stats)
+head(stats)
+
+stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-4+1, nchar(player_id)))
+stats$rnorm <- rnorm(nrow(stats), mean=0, sd=40)
+stats$newrow <- sample(15, size = nrow(stats), replace = TRUE)
+stats$abs <- abs(stats$rnorm)/1000
+stats["abs"]
+
 colnames(stats)
 p_name <- c(unique(stats[["player_name"]]))
 #order_stats <- stats[order(stats["player_name"]),]
@@ -18,6 +26,13 @@ p_name <- c(unique(stats[["player_name"]]))
 #p_data_passing_yards
 
 #plot(p_data$week, p_data$passing_yards)
+
+num_df <- 
+  stats %>% 
+  charToRaw %>% 
+  as.numeric %>% 
+  '-'(96) %>% 
+  paste(collapse = '')
 
 listc <- c("Tom Brady", "Aaron Rodgers")
 #listc[1]
