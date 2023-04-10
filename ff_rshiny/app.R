@@ -24,6 +24,11 @@ stats <- load_player_stats()
 #order_stats <- stats[order(stats["player_name"]),]
 #p_names <- c(unique(order_stats[["player_name"]]))
 p_names <- c(unique(stats[["player_display_name"]]))
+stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-4+1, nchar(player_id)))
+stats$rnorm <- rnorm(nrow(stats), mean=0, sd=40)
+stats$newrow <- sample(15, size = nrow(stats), replace = TRUE)
+stats$abs <- abs(stats$rnorm)/1000
+stats["abs"]
 
 
 col_pretty <- data.frame(og_name = c("passing_yards", "passing_tds", "rushing_yards", 
