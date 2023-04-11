@@ -7,6 +7,7 @@ library(magrittr)
 stats <- load_player_stats()
 #dplyr::glimpse(stats)
 head(stats)
+set.seed(1)
 
 stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-4+1, nchar(player_id)))
 stats$rnorm <- rnorm(nrow(stats), mean=0, sd=40)
