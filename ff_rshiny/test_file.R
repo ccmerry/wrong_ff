@@ -9,11 +9,19 @@ stats <- load_player_stats()
 head(stats)
 set.seed(1)
 
-stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-4+1, nchar(player_id)))
+stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-1+1, nchar(player_id)))
+even_num <- c(2,4,6,8,0)
+stats$even_odd <- ifelse(stats$num_rand %in% even_num, 1, -1)
+head(stats$even_odd)
 stats$rnorm <- rnorm(nrow(stats), mean=0, sd=40)
 stats$newrow <- sample(15, size = nrow(stats), replace = TRUE)
-stats$abs <- abs(stats$rnorm)/1000
-stats["abs"]
+stats$abs <- (abs(stats$rnorm)/1000 * stats$even_odd) + 1
+stats$abs
+stats$single_change <- ifelse(stats$abs > .06, 1, 0)
+stats <- stats %>% mutate(new_passing_yards = stats$passing_yards * stats$abs)
+stats$passing_yards
+stats$new_passing_yards
+
 
 colnames(stats)
 p_name <- c(unique(stats[["player_name"]]))

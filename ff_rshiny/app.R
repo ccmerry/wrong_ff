@@ -18,17 +18,20 @@ library(stringr)
 library(shinyjs)
 library(tidyr)
 library(RColorBrewer)
+
+set.seed(1)
+even_num <- c(2,4,6,8,0)
 stats <- load_player_stats()
-#dplyr::glimpse(stats)
-#head(stats)
-#order_stats <- stats[order(stats["player_name"]),]
-#p_names <- c(unique(order_stats[["player_name"]]))
 p_names <- c(unique(stats[["player_display_name"]]))
-stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-4+1, nchar(player_id)))
+
+#creates method of consistently making the same player's stats inflated or deflated
+stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-1+1, nchar(player_id)))
+stats$even_odd <- ifelse(stats$num_rand %in% even_num, 1, -1)
+
 stats$rnorm <- rnorm(nrow(stats), mean=0, sd=40)
 stats$newrow <- sample(15, size = nrow(stats), replace = TRUE)
 stats$abs <- abs(stats$rnorm)/1000
-stats["abs"]
+stats$single_change <- ifelse(stats$abs > .06, 1, 0)
 
 
 col_pretty <- data.frame(og_name = c("passing_yards", "passing_tds", "rushing_yards", 
