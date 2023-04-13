@@ -18,23 +18,38 @@ library(stringr)
 library(shinyjs)
 library(tidyr)
 library(RColorBrewer)
+library(magrittr)
 
 set.seed(1)
 even_num <- c(2,4,6,8,0)
 stats <- load_player_stats()
-p_names <- c(unique(stats[["player_display_name"]]))
+p_names <- sort(c(unique(stats[["player_display_name"]])))
 
 #creates method of consistently making the same player's stats inflated or deflated
 stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-1+1, nchar(player_id)))
 stats$even_odd <- ifelse(stats$num_rand %in% even_num, 1, -1)
 
-stats$rnorm <- rnorm(nrow(stats), mean=0, sd=40)
-stats$newrow <- sample(15, size = nrow(stats), replace = TRUE)
-stats$abs <- abs(stats$rnorm)/1000
+#creates rand column and then creates percentage to multiply lg values(pass yds, rush yds, etc)
+stats$lg_rnorm <- rnorm(nrow(stats), mean=0, sd=40)
+stats$abs <- (abs(stats$lg_rnorm)/1000 * stats$even_odd) + 1
+
+#changes lg stats by rand value
+stats <- stats %>% mutate(new_passing_yards = round(stats$passing_yards * stats$abs))
+stats <- stats %>% mutate(new_passing_yards_after_catch = round(stats$passing_yards_after_catch * stats$abs))
+stats <- stats %>% mutate(new_receiving_yards = round(stats$receiving_yards * stats$abs))
+stats <- stats %>% mutate(new_receiving_yards_after_catch = round(stats$receiving_yards_after_catch * stats$abs))
+stats <- stats %>% mutate(new_receiving_air_yards = round(stats$receiving_air_yards * stats$abs))
+stats <- stats %>% mutate(new_rushing_yards = round(stats$rushing_yards * stats$abs))
+stats <- stats %>% mutate(new_fantasy_points = round(stats$fantasy_points * stats$abs))
+stats <- stats %>% mutate(new_fantasy_points_ppr = round(stats$fantasy_points_ppr * stats$abs))
+
+#filter out postseason games and last game of season
+stats <- stats %>% filter(week < 18)
+
 stats$single_change <- ifelse(stats$abs > .06, 1, 0)
 
 
-col_pretty <- data.frame(og_name = c("passing_yards", "passing_tds", "rushing_yards", 
+col_pretty <- data.frame(og_name = c("new_passing_yards", "passing_tds", "rushing_yards", 
                                      "fantasy_points", "fantasy_points_ppr"),
                          new_name = c("Passing Yards", "Passing TDs", "Rushing Yards",
                                       "Fantasy Points", "Fantasy Points PPR"),
@@ -55,9 +70,20 @@ col_l <- c("completions","attempts","passing_yards","passing_tds","interceptions
            "carries","rushing_yards","rushing_tds","rushing_fumbles","rushing_first_downs",
            "fantasy_points","fantasy_points_ppr")
 
+col_equals <- c("Completions","Attempts","Passing Yards","Passing TDs","Interceptions",
+                "Sacks","Sack Yards","Sack Fumbles","Sack Fumbles Lost","Passing Air Yards",
+                "Passing Yards after Catch","Passing First Downs",
+                "Carries","Rushing Yards","Rushing TDs","Rushing Fumbles","Rushing First Downs",
+                "Fantasy Points","Fantasy Points PPR")
+
+c_name <- data.frame(stats = col_l,
+                     t_name = col_equals)
+
 non_qb_ls <- c("carries","rushing_yards","rushing_tds","rushing_first_downs",
                "receptions","targets","receiving_yards","receiving_tds",
                "fantasy_points","fantasy_points_ppr")
+
+
 
 min_yr = 1
 
@@ -99,13 +125,14 @@ if (interactive()) {
         choices = p_names,
         selected = NULL, 
         choiceValues = p_names2,
-        width = "100%"
+        width = "100%",
+        options = list(limit = 4)
         ),
       
       
       selectInput("y_stat", 
                   label = h3("Select Stat"), 
-                  choices = list("Passing Yards" = "passing_yards",
+                  choices = list("Passing Yards" = "new_passing_yards",
                                  "Passing TDs" = "passing_tds",
                                  "Rushing Yards" = "rushing_yards",
                                  "Fantasy Points" = "fantasy_points",
@@ -310,8 +337,17 @@ if (interactive()) {
           )
       })
     
+    #p_merge_s <- reactive({
+      #merge(x = p_sum_long(), y = c_name, 
+            #by.x = stats, by.y = f_name)
+      #})
+    
+    p_merge_s <- reactive({
+      p_sum_long() %>% left_join(c_name, by = 'stats')
+      })
+    
     long_f <- reactive({
-      p_sum_long() %>%
+      p_merge_s() %>%
         filter(value > 0,stats %in% col_l)
     })
     
@@ -323,7 +359,7 @@ if (interactive()) {
     
     p_sum_f <- reactive({
       sg() #%>%
-        #filter(value > 0)
+        #filter(sg()$t_name != NULL)
     })
     
     
@@ -331,18 +367,24 @@ if (interactive()) {
     ################################
     
     output$bar_oview <- renderPlot({
-      ggplot(p_sum_f(),aes(p_sum_f()$perc, p_sum_f()$stats, fill = p_sum_f()$new_pname)) +
+      ggplot(p_sum_f(),
+             aes(p_sum_f()$perc, y = reorder(p_sum_f()$t_name,desc(p_sum_f()$t_name)), 
+                 fill = p_sum_f()$new_pname)) +
         geom_col() + 
         geom_text(aes(label=paste0(p_sum_f()$value)),
                   position=position_stack(vjust=0.5),
                   colour = "white") +
-        scale_x_continuous(limits = c(0, 1)) +
+        scale_x_continuous(expand = c(0, 0)) +
+        guides(fill=guide_legend(title="")) +
         theme(panel.grid.major = element_blank(),
               panel.grid.minor = element_blank(),
               panel.border = element_blank(),
               panel.background = element_blank(),
               axis.ticks.x = element_blank(),
-              axis.text.x = element_blank()) + 
+              axis.text.x = element_blank(),
+              axis.text.y = element_text(size = 12),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank()) + 
         scale_fill_manual(values=c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"))
     })
     
