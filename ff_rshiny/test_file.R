@@ -47,11 +47,11 @@ num_df <-
   '-'(96) %>% 
   paste(collapse = '')
 
-listc <- c("Tom Brady", "Aaron Rodgers")
+listc <- c("Adam Thielen")
 #listc[1]
 
 p_data <- stats %>% filter(stats$player_display_name %in% listc)
-
+sum(p_data$receiving_air_yards,na.rm=TRUE)
 
 print("here")
 
