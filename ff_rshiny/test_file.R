@@ -5,12 +5,16 @@ library(tidyr)
 library(magrittr)
 library(tidyverse)
 
-stats <- load_player_stats()
+stats <- load_player_stats(seasons=c(2020,2021,2022))
 #dplyr::glimpse(stats)
+#df2 <- emp_df[order(df$price),]
+stats <- stats[order(stats$player_display_name),]
 head(stats)
-p_names <- c(unique(stats[["player_display_name"]]))
 sort(p_names)
 set.seed(1)
+
+acole <- stats %>% filter(stats$player_display_name == "A.J. Cole")
+acole$headshot_url
 
 stats %<>% mutate(num_rand = substr(player_id, nchar(player_id)-1+1, nchar(player_id)))
 even_num <- c(2,4,6,8,0)

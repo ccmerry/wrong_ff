@@ -23,6 +23,7 @@ library(magrittr)
 set.seed(1)
 even_num <- c(2,4,6,8,0)
 stats <- load_player_stats(seasons=c(2020,2021,2022))
+stats <- stats[order(stats$player_display_name),]
 p_names <- sort(c(unique(stats[["player_display_name"]])))
 
 #creates method of consistently making the same player's stats inflated or deflated
@@ -56,11 +57,11 @@ col_pretty <- data.frame(og_name = c("new_passing_yards", "passing_tds","new_rec
                                       "Rushing Yards",
                                       "Fantasy Points", "Fantasy Points PPR"),
                          avg_name = c("Avg Pass Yds/Game", "Avg PassTD/Game", "Avg Rec Yds", 
-                                      "Avg Rsh Yds/Game",
-                                      "Avg FntsyPts/Game", "Avg FntsyPtsPPR/Game"),
-                         med_name = c("Median Pass Yds", "Median PassTD", "Median Rec Yds", 
-                                      "Median Rsh Yds",
-                                      "Median FntsyPts", "Median FntsyPtsPPR")
+                                      "Avg Rush Yds/Game",
+                                      "Avg Fantasy Pts/Game", "Avg Fantasy Pts PPR/Game"),
+                         med_name = c("Median Pass Yds", "Median Pass TD", "Median Rec Yds", 
+                                      "Median Rush Yds",
+                                      "Median Fantasy Pts", "Median Fantasy Pts PPR")
 )
 
 col_ls <- c("completions","attempts","passing_yards","passing_tds","interceptions",
@@ -191,6 +192,35 @@ if (interactive()) {
                       '
                       .content-wrapper, .right-side {
                       background-color: #E5E4E2;
+                      }',
+                      
+                      '
+                      .box.box-solid.box-primary>.box-header {
+                        
+                      }',
+                      
+                      '
+                      .box.box-solid.box-primary{
+                        
+                        background:#003f5c
+                      }',
+                      
+                      '
+                      .box.box-solid.box-success{
+                        
+                        background:#58508d
+                      }',
+                      
+                      '
+                      .box.box-solid.box-warning{
+                        
+                        background:#bc5090
+                      }',
+                      
+                      '
+                      .box.box-solid.box-danger{
+                        
+                        background:#ff6361
                       }'
                       
                       ))),
@@ -203,6 +233,9 @@ if (interactive()) {
         div(id = "b1_wrap",
             box(id = "box1",
                 width = 3,
+                #background = "blue",
+                status = "primary",
+                solidHeader = TRUE,
                 fluidRow(align="center",
                          htmlOutput("name1")
                          ),
@@ -210,10 +243,10 @@ if (interactive()) {
                          htmlOutput("picture1")
                          ),
                 fluidRow(align="center",
-                         textOutput("avg1")
+                         htmlOutput("avg1")
                          ),
                 fluidRow(align="center",
-                         textOutput("med1")
+                         htmlOutput("med1")
                          )
                 )
           ),
@@ -222,6 +255,8 @@ if (interactive()) {
         div(id = "b2_wrap",
             box(id = "box2",
                 width = 3,
+                status = "success",
+                solidHeader = TRUE,
                 fluidRow(align="center",
                          htmlOutput("name2")
                          ),
@@ -229,10 +264,10 @@ if (interactive()) {
                          htmlOutput("picture2")
                          ),
                 fluidRow(align="center",
-                         textOutput("avg2")
+                         htmlOutput("avg2")
                          ),
                 fluidRow(align="center",
-                         textOutput("med2")
+                         htmlOutput("med2")
                          )
                 )
             ),
@@ -241,6 +276,8 @@ if (interactive()) {
         div(id = "b3_wrap",
             box(id = "box3",
                 width = 3,
+                status = "warning",
+                solidHeader = TRUE,
                 fluidRow(align="center",
                          htmlOutput("name3")
                          ),
@@ -248,10 +285,10 @@ if (interactive()) {
                          htmlOutput("picture3")
                          ),
                 fluidRow(align="center",
-                         textOutput("avg3")
+                         htmlOutput("avg3")
                          ),
                 fluidRow(align="center",
-                         textOutput("med3")
+                         htmlOutput("med3")
                          )
                 )
             ),
@@ -260,6 +297,8 @@ if (interactive()) {
         div(id = "b4_wrap",
             box(id = "box4",
                 width = 3,
+                status = "danger",
+                solidHeader = TRUE,
                 fluidRow(align="center",
                          htmlOutput("name4")
                          ),
@@ -267,10 +306,10 @@ if (interactive()) {
                          htmlOutput("picture4")
                          ),
                 fluidRow(align="center",
-                         textOutput("avg4")
+                         htmlOutput("avg4")
                          ),
                 fluidRow(align="center",
-                         textOutput("med4")
+                         htmlOutput("med4")
                          )
                 )
             )
@@ -434,6 +473,7 @@ if (interactive()) {
               panel.grid.minor = element_blank(),
               panel.border = element_blank(),
               panel.background = element_blank(),
+              legend.text=element_text(size=12),
               axis.ticks.x = element_blank(),
               axis.text.x = element_blank(),
               axis.text.y = element_text(size = 12),
@@ -524,7 +564,7 @@ if (interactive()) {
     })
     
     output$name1 <- renderText({
-      paste("<b>",player_lists()[1],"</b>")
+      paste("<font color=\"#FFFFFF\"><b>",player_lists()[1],"</b>")
     })
     
     src1 <- reactive({
@@ -536,11 +576,11 @@ if (interactive()) {
     })
     
     output$avg1 <- renderText({
-      paste(avg_name(),round(mean(first_avg()[[y_var()]]),2),sep = ": ")
+      paste("<font color=\"#FFFFFF\">",avg_name(),": ",round(mean(first_avg()[[y_var()]]),2),sep = "","</font>")
     })
     
     output$med1 <- renderText({
-      paste(med_name(),round(median(first_avg()[[y_var()]]),2),sep = ": ")
+      paste("<font color=\"#FFFFFF\">",med_name(),": ",round(median(first_avg()[[y_var()]]),2),sep = "","</font>")
     })
     
     ########### Box 2 ###########
@@ -554,7 +594,7 @@ if (interactive()) {
     })
     
     output$name2 <- renderText({
-      paste("<b>",player_lists()[2],"</b>")
+      paste("<font color=\"#FFFFFF\"><b>",player_lists()[2],"</b>")
     })
     
     src2 <- reactive({
@@ -566,11 +606,11 @@ if (interactive()) {
     })
     
     output$avg2 <- renderText({
-      paste(avg_name(),round(mean(second_avg()[[y_var()]]),2),sep = ": ")
+      paste("<font color=\"#FFFFFF\">",avg_name(),": ",round(mean(second_avg()[[y_var()]]),2),sep = "","</font>")
     })
     
     output$med2 <- renderText({
-      paste(med_name(),round(median(second_avg()[[y_var()]]),2),sep = ": ")
+      paste("<font color=\"#FFFFFF\">",med_name(),": ",round(median(second_avg()[[y_var()]]),2),sep = "","</font>")
     })
     
     ########### Box 3 ###########
@@ -584,7 +624,7 @@ if (interactive()) {
     })
     
     output$name3 <- renderText({
-      paste("<b>",player_lists()[3],"</b>")
+      paste("<font color=\"#FFFFFF\"><b>",player_lists()[3],"</b>")
     })
     
     src3 <- reactive({
@@ -596,11 +636,11 @@ if (interactive()) {
     })
     
     output$avg3 <- renderText({
-      paste(avg_name(),round(mean(third_avg()[[y_var()]]),2),sep = ": ")
+      paste("<font color=\"#FFFFFF\">",avg_name(),": ",round(mean(third_avg()[[y_var()]]),2),sep = "","</font>")
     })
     
     output$med3 <- renderText({
-      paste(med_name(),round(median(third_avg()[[y_var()]]),2),sep = ": ")
+      paste("<font color=\"#FFFFFF\">",med_name(),": ",round(median(third_avg()[[y_var()]]),2),sep = "","</font>")
     })
     
     ########### Box 4 ###########
@@ -614,7 +654,7 @@ if (interactive()) {
     })
     
     output$name4 <- renderText({
-      paste("<b>",player_lists()[4],"</b>")
+      paste("<font color=\"#FFFFFF\"><b>",player_lists()[4],"</b>")
     })
     
     src4 <- reactive({
@@ -626,16 +666,16 @@ if (interactive()) {
     })
     
     output$avg4 <- renderText({
-      paste(avg_name(),round(mean(fourth_avg()[[y_var()]]),2),sep = ": ")
+      paste("<font color=\"#FFFFFF\">",avg_name(),": ",round(mean(fourth_avg()[[y_var()]]),2),sep = "","</font>")
     })
     
     output$med4 <- renderText({
-      paste(med_name(),round(median(fourth_avg()[[y_var()]]),2),sep = ": ")
+      paste("<font color=\"#FFFFFF\">",med_name(),": ",round(median(fourth_avg()[[y_var()]]),2),sep = "","</font>")
     })
     
     ############################
     
-    output$plot_pt <- renderPlot({
+    output$plot_pt2 <- renderPlot({
       ggplot(p_data(), aes(p_data()$week, p_data()[[y_var()]])) + 
         geom_point(aes(fill = p_data()$player_display_name), size = 5, shape = 21) +
         theme(legend.title=element_blank()) +
@@ -649,9 +689,10 @@ if (interactive()) {
         #xlab("Season") + ylab(y_stat_name())
     #})
     
-    output$sea_pt <- renderPlot({
+    output$plot_pt <- renderPlot({
       ggplot(p_data(), aes(p_data()[[y_var()]], p_data()$player_display_name)) +
-        geom_point(aes(fill = p_data()$player_display_name),size=5, shape = 21) +
+        geom_point(aes(fill = p_data()$player_display_name),size=5, shape = 21,
+                   position = position_jitter(w = 0, h = 0.01)) +
         #scale_colour_manual(values = c("black", "black", "black", "black", "black"))+
         guides(fill=guide_legend(title="")) +
         theme(legend.position = "none",
@@ -663,7 +704,25 @@ if (interactive()) {
               axis.text.y = element_text(size = 12),
               axis.title.y = element_blank()) + 
         xlab(y_stat_name()) +
-        scale_fill_manual(values=alpha(c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"),.2))
+        scale_fill_manual(values=alpha(c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"),.4))
+    })
+    
+    output$sea_pt <- renderPlot({
+      ggplot(p_data(), aes(p_data()[[y_var()]], p_data()$player_display_name)) +
+        geom_point(aes(fill = p_data()$player_display_name),size=5, shape = 21,
+                   position = position_jitter(w = 0, h = 0.01)) +
+        #scale_colour_manual(values = c("black", "black", "black", "black", "black"))+
+        guides(fill=guide_legend(title="")) +
+        theme(legend.position = "none",
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              panel.border = element_blank(),
+              panel.background = element_blank(),
+              axis.text.x = element_text(size = 12),
+              axis.text.y = element_text(size = 12),
+              axis.title.y = element_blank()) + 
+        xlab(y_stat_name()) +
+        scale_fill_manual(values=alpha(c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"),.4))
     })
     
     ############################
