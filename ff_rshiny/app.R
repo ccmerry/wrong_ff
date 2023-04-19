@@ -41,8 +41,8 @@ stats <- stats %>% mutate(new_receiving_yards = round(stats$receiving_yards * st
 stats <- stats %>% mutate(new_receiving_yards_after_catch = round(stats$receiving_yards_after_catch * stats$abs))
 stats <- stats %>% mutate(new_receiving_air_yards = round(stats$receiving_air_yards * stats$abs))
 stats <- stats %>% mutate(new_rushing_yards = round(stats$rushing_yards * stats$abs))
-stats <- stats %>% mutate(new_fantasy_points = round(stats$fantasy_points * stats$abs))
-stats <- stats %>% mutate(new_fantasy_points_ppr = round(stats$fantasy_points_ppr * stats$abs))
+stats <- stats %>% mutate(new_fantasy_points = round(stats$fantasy_points * stats$abs,digits = 2))
+stats <- stats %>% mutate(new_fantasy_points_ppr = round(stats$fantasy_points_ppr * stats$abs,digits = 2))
 
 #filter out postseason games and last game of season
 stats <- stats %>% filter(week < 18)
