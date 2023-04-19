@@ -23,6 +23,8 @@ stats$even_odd <- ifelse(stats$num_rand %in% even_num, 1, -1)
 stats$rnorm <- rnorm(nrow(stats), mean=0, sd=40)
 stats$newrow <- sample(15, size = nrow(stats), replace = TRUE)
 stats$abs <- (abs(stats$rnorm)/1000 * stats$even_odd) + 1
+stats$sum_row <- abs(stats$rnorm/1000)
+mean(stats$sum_row)
 
 stats$single_change <- ifelse(stats$abs > .06, 1, 0)
 stats <- stats %>% mutate(new_passing_yards = round(stats$passing_yards * stats$abs))

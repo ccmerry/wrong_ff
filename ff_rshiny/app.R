@@ -130,7 +130,7 @@ if (interactive()) {
       
       multiInput(
         inputId = "p_id", 
-        label = "Player :",
+        label = "Select up to Four Players",
         choices = p_names,
         selected = NULL, 
         choiceValues = p_names2,
@@ -138,23 +138,27 @@ if (interactive()) {
         options = list(limit = 4)
         ),
       
-      fluidRow(
-        column(width =6,
-               checkboxGroupInput("chartGraphs", 
-                                  label = h3("Chart"), 
-                                  choices = list("Stat by Week" = "sWeek", "Overview" = "oView")
-                                  )
-               ),
-        
-      column(width = 6,
-             checkboxGroupInput("yrCheck", 
-                                label = h3("Season"), 
-                                choices = list("2022" = 2022, "2021" = 2021, "2020" = 2020),
-                                selected = 2022
-                                )
-             )
+      fluidRow(align="center",
+               htmlOutput("w18")
       ),
       
+      fluidRow(
+        column(width =6,
+               radioButtons("chartGraphs", 
+                            label = h3("Chart"), 
+                            choices = list("Overview" = "oView", "Single Stat" = "sWeek"),
+                            selected = "oView"
+                            )
+               ),
+        
+        column(width = 6,
+               checkboxGroupInput("yrCheck", 
+                                  label = h3("Season"), 
+                                  choices = list("2022" = 2022, "2021" = 2021, "2020" = 2020),
+                                  selected = 2022
+                                  )
+               )
+        ),
       
       selectInput("y_stat", 
                   label = h3("Select Stat"), 
@@ -165,8 +169,8 @@ if (interactive()) {
                                  "Fantasy Points" = "new_fantasy_points",
                                  "Fantasy Points PPR" = "new_fantasy_points_ppr"), 
                   selected = 1)
-      
       ),
+    
     
     dashboardBody(
       
@@ -323,13 +327,13 @@ if (interactive()) {
                 plotOutput("plot_pt"))
             )
         ),
-      fluidRow(
-        div(id = "sea_wrap",
-            box(id = "seaPoint",
-                width = 12,
-                plotOutput("sea_pt"))
-        )
-      ),
+      #fluidRow(
+        #div(id = "sea_wrap",
+            #box(id = "seaPoint",
+                #width = 12,
+                #plotOutput("sea_pt"))
+        #)
+      #),
       fluidRow(
         div(id = "bar_wrap",
             box(id = "plotBar",
@@ -463,9 +467,9 @@ if (interactive()) {
       ggplot(p_sum_f(),
              aes(p_sum_f()$perc, y = reorder(p_sum_f()$t_name,desc(p_sum_f()$t_name)), 
                  fill = p_sum_f()$new_pname)) +
-        geom_col() + 
+        geom_col(position = position_fill(reverse = TRUE)) + 
         geom_text(aes(label=paste0(p_sum_f()$value)),
-                  position=position_stack(vjust=0.5),
+                  position=position_stack(vjust=0.5, reverse = TRUE),
                   colour = "white") +
         scale_x_continuous(expand = c(0, 0)) +
         guides(fill=guide_legend(title="")) +
@@ -486,22 +490,18 @@ if (interactive()) {
     
     #Hide/Show point plot
     observe({
-      if(length(input$chartGraphs) < min_yr){
+      if(length(input$p_id) < min_yr){
         shinyjs::hide(id = "point_wrap")
-        shinyjs::hide(id = "sea_wrap")
         shinyjs::hide(id = "bar_wrap")
       }else{
         if("sWeek" %in% input$chartGraphs){
-          if(length(input$yrCheck) > 1){
-            shinyjs::show(id = "sea_wrap")
-            shinyjs::hide(id = "point_wrap")
-          }else{
+          if(length(input$p_id) > 0){
             shinyjs::show(id = "point_wrap")
-            shinyjs::hide(id = "sea_wrap")
+          }else{
+            shinyjs::hide(id = "point_wrap")
           }
         }else{
           shinyjs::hide(id = "point_wrap")
-          shinyjs::hide(id = "sea_wrap")
         }
         if("oView" %in% input$chartGraphs){
           shinyjs::show(id = "bar_wrap")
@@ -675,6 +675,12 @@ if (interactive()) {
     
     ############################
     
+    output$w18 <- renderText({
+      paste("Week 18 games have been omitted.")
+    })
+    
+    ############################
+    
     output$plot_pt2 <- renderPlot({
       ggplot(p_data(), aes(p_data()$week, p_data()[[y_var()]])) + 
         geom_point(aes(fill = p_data()$player_display_name), size = 5, shape = 21) +
@@ -707,7 +713,7 @@ if (interactive()) {
         scale_fill_manual(values=alpha(c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"),.4))
     })
     
-    output$sea_pt <- renderPlot({
+    output$sea_pt2 <- renderPlot({
       ggplot(p_data(), aes(p_data()[[y_var()]], p_data()$player_display_name)) +
         geom_point(aes(fill = p_data()$player_display_name),size=5, shape = 21,
                    position = position_jitter(w = 0, h = 0.01)) +
