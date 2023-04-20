@@ -1,0 +1,14 @@
+name: ff_compare
+title: ff_compare
+username:
+account: cocomerry
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8902416
+bundleId: 7111970
+url: https://cocomerry.shinyapps.io/ff_compare/
+when: 1681958278.61585
+lastSyncTime: 1681958278.61586
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: global.R|test_file.R
