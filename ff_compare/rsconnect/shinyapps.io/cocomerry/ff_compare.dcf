@@ -5,10 +5,10 @@ account: cocomerry
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 8902416
-bundleId: 7111970
+bundleId: 7119672
 url: https://cocomerry.shinyapps.io/ff_compare/
-when: 1681958278.61585
-lastSyncTime: 1681958278.61586
+when: 1682108435.58674
+lastSyncTime: 1682108435.58675
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: global.R|test_file.R

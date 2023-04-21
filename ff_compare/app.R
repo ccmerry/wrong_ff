@@ -52,7 +52,7 @@ stats <- stats %>% filter(week < 18)
 stats$single_change <- ifelse(stats$abs > .06, 1, 0)
 
 
-col_pretty <- data.frame(og_name = c("new_passing_yards", "passing_tds","new_receiving_yards", 
+col_pretty2 <- data.frame(og_name = c("new_passing_yards", "passing_tds","new_receiving_yards", 
                                      "new_rushing_yards", 
                                      "new_fantasy_points", "new_fantasy_points_ppr"),
                          new_name = c("Passing Yards", "Passing TDs", "Receiving Yards", 
@@ -64,6 +64,20 @@ col_pretty <- data.frame(og_name = c("new_passing_yards", "passing_tds","new_rec
                          med_name = c("Median Pass Yds", "Median Pass TD", "Median Rec Yds", 
                                       "Median Rush Yds",
                                       "Median Fantasy Pts", "Median Fantasy Pts PPR")
+)
+
+col_pretty <- data.frame(og_name = c("new_fantasy_points", "new_fantasy_points_ppr",
+                                     "new_passing_yards", "new_receiving_yards", 
+                                     "new_rushing_yards"),
+                         new_name = c("Fantasy Points", "Fantasy Points PPR",
+                                      "Passing Yards", "Receiving Yards", 
+                                      "Rushing Yards"),
+                         avg_name = c("Avg Fantasy Pts/Game", "Avg Fantasy Pts PPR/Game",
+                                      "Avg Pass Yds/Game", "Avg Rec Yds", 
+                                      "Avg Rush Yds/Game"),
+                         med_name = c("Median Fantasy Pts", "Median Fantasy Pts PPR",
+                                      "Median Pass Yds", "Median Rec Yds", 
+                                      "Median Rush Yds")
 )
 
 col_ls <- c("completions","attempts","passing_yards","passing_tds","interceptions",
@@ -119,649 +133,662 @@ min_yr = 1
 #"fantasy_points_ppr" 
 
 
+##########################################
+#################   UI   #################
+##########################################
 
-  ui <- dashboardPage(
+
+ui <- dashboardPage(
+  dashboardHeader(titleWidth = 350,
+                  title = "Fantasy Football Compare"),
+  
+  dashboardSidebar(
+    useShinyjs(),
+    width = 350,
     
-    dashboardHeader(
-      titleWidth = 350,
-      title = "Fantasy Football Compare"),
+    multiInput(
+      inputId = "p_id",
+      label = "Select up to Four Players",
+      choices = p_names,
+      selected = NULL,
+      width = "100%"
+    ),
     
-    dashboardSidebar(
-      useShinyjs(),
-      width = 350,
-      
-      multiInput(
-        inputId = "p_id", 
-        label = "Select up to Four Players",
-        choices = p_names,
-        selected = NULL, 
-        choiceValues = p_names2,
-        width = "100%"
-        ),
-      
-      #verbatimTextOutput(outputId = "res"),
-      
-      fluidRow(align="center",
-               htmlOutput("w18")
+    fluidRow(align = "center",
+             htmlOutput("w18")),
+    
+    fluidRow(
+      column(
+        width = 6,
+        radioButtons(
+          "chartGraphs",
+          label = h3("Chart"),
+          choices = list("Overview" = "oView", "Single Stat" = "sWeek"),
+          selected = "oView"
+        )
       ),
       
-      fluidRow(
-        column(width =6,
-               radioButtons("chartGraphs", 
-                            label = h3("Chart"), 
-                            choices = list("Overview" = "oView", "Single Stat" = "sWeek"),
-                            selected = "oView"
-                            )
-               ),
-        
-        column(width = 6,
-               checkboxGroupInput("yrCheck", 
-                                  label = h3("Season"), 
-                                  choices = list("2022" = 2022, "2021" = 2021, "2020" = 2020),
-                                  selected = 2022
-                                  )
-               )
-        ),
-      
-      selectInput("y_stat", 
-                  label = h3("Select Stat"), 
-                  choices = list("Passing Yards" = "new_passing_yards",
-                                 "Passing TDs" = "passing_tds",
-                                 "Receiving Yards" = "new_receiving_yards",
-                                 "Rushing Yards" = "new_rushing_yards",
-                                 "Fantasy Points" = "new_fantasy_points",
-                                 "Fantasy Points PPR" = "new_fantasy_points_ppr"), 
-                  selected = 1)
+      column(
+        width = 6,
+        checkboxGroupInput(
+          "yrCheck",
+          label = h3("Season"),
+          choices = list(
+            "2022" = 2022,
+            "2021" = 2021,
+            "2020" = 2020
+          ),
+          selected = c(2022, 2021, 2020)
+        )
+      )
+    ),
+    
+    selectInput(
+      "y_stat",
+      label = h3("Select Stat"),
+      choices = list(
+        "Fantasy Points" = "new_fantasy_points",
+        "Fantasy Points PPR" = "new_fantasy_points_ppr",
+        "Passing Yards" = "new_passing_yards",
+        "Receiving Yards" = "new_receiving_yards",
+        "Rushing Yards" = "new_rushing_yards"
       ),
-    
-    
-    dashboardBody(
-      
-      tags$head(
-      tags$style(HTML('
+      selected = 1
+    )
+  ),
+  
+  
+  dashboardBody(
+    tags$head(tags$style(
+      HTML(
+        '
                       .skin-blue .sidebar a {
                       color: #0000FF;
                       }',
-                      
-                      
-                      '
+        
+        
+        '
                       .skin-blue .search-input {
                       color: #000000;
                       }',
-                      
-                      
-                      '
+        
+        
+        '
                       .skin-blue .multi-wrapper {
                       color: #0000FF;
                       }',
-                      
-                      
-                      '
+        
+        
+        '
                       .content-wrapper, .right-side {
                       background-color: #E5E4E2;
                       }',
-                      
-                      '
+        
+        '
                       .box.box-solid.box-primary>.box-header {
-                        
+
                       }',
-                      
-                      '
+        
+        '
                       .box.box-solid.box-primary{
-                        
+
                         background:#003f5c
                       }',
-                      
-                      '
+        
+        '
                       .box.box-solid.box-success{
-                        
+
                         background:#58508d
                       }',
-                      
-                      '
+        
+        '
                       .box.box-solid.box-warning{
-                        
+
                         background:#bc5090
                       }',
-                      
-                      '
+        
+        '
                       .box.box-solid.box-danger{
-                        
+
                         background:#ff6361
                       }'
-                      
-                      ))),
-      
-      br(),
-      
-      fluidRow(
         
-        ##### First Player #####
-        div(id = "b1_wrap",
-            box(id = "box1",
-                width = 3,
-                #background = "blue",
-                status = "primary",
-                solidHeader = TRUE,
-                fluidRow(align="center",
-                         htmlOutput("name1")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("picture1")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("avg1")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("med1")
-                         )
-                )
-          ),
-        
-        ##### Second Player #####
-        div(id = "b2_wrap",
-            box(id = "box2",
-                width = 3,
-                status = "success",
-                solidHeader = TRUE,
-                fluidRow(align="center",
-                         htmlOutput("name2")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("picture2")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("avg2")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("med2")
-                         )
-                )
-            ),
-        
-        ##### Third Player #####
-        div(id = "b3_wrap",
-            box(id = "box3",
-                width = 3,
-                status = "warning",
-                solidHeader = TRUE,
-                fluidRow(align="center",
-                         htmlOutput("name3")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("picture3")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("avg3")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("med3")
-                         )
-                )
-            ),
-        
-        ##### Fourth Player #####
-        div(id = "b4_wrap",
-            box(id = "box4",
-                width = 3,
-                status = "danger",
-                solidHeader = TRUE,
-                fluidRow(align="center",
-                         htmlOutput("name4")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("picture4")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("avg4")
-                         ),
-                fluidRow(align="center",
-                         htmlOutput("med4")
-                         )
-                )
-            )
+      )
+    )),
+    
+    br(),
+    
+    fluidRow(
+      ##### First Player #####
+      div(
+        id = "b1_wrap",
+        box(
+          id = "box1",
+          width = 3,
+          #background = "blue",
+          status = "primary",
+          solidHeader = TRUE,
+          fluidRow(align = "center",
+                   htmlOutput("name1")),
+          fluidRow(align = "center",
+                   htmlOutput("picture1")),
+          fluidRow(align = "center",
+                   htmlOutput("avg1")),
+          fluidRow(align = "center",
+                   htmlOutput("med1"))
+        )
       ),
       
-      # Boxes need to be put in a row (or column)
-      fluidRow(
-        div(id = "point_wrap",
-            box(id = "plotPoint",
-                width = 12,
-                plotOutput("plot_pt"))
-            )
-        ),
-      #fluidRow(
-        #div(id = "sea_wrap",
-            #box(id = "seaPoint",
-                #width = 12,
-                #plotOutput("sea_pt"))
-        #)
-      #),
-      fluidRow(
-        div(id = "bar_wrap",
-            box(id = "plotBar",
-                width = 12,
-                plotOutput("bar_oview"))
-            )
+      ##### Second Player #####
+      div(
+        id = "b2_wrap",
+        box(
+          id = "box2",
+          width = 3,
+          status = "success",
+          solidHeader = TRUE,
+          fluidRow(align = "center",
+                   htmlOutput("name2")),
+          fluidRow(align = "center",
+                   htmlOutput("picture2")),
+          fluidRow(align = "center",
+                   htmlOutput("avg2")),
+          fluidRow(align = "center",
+                   htmlOutput("med2"))
+        )
+      ),
+      
+      ##### Third Player #####
+      div(
+        id = "b3_wrap",
+        box(
+          id = "box3",
+          width = 3,
+          status = "warning",
+          solidHeader = TRUE,
+          fluidRow(align = "center",
+                   htmlOutput("name3")),
+          fluidRow(align = "center",
+                   htmlOutput("picture3")),
+          fluidRow(align = "center",
+                   htmlOutput("avg3")),
+          fluidRow(align = "center",
+                   htmlOutput("med3"))
+        )
+      ),
+      
+      ##### Fourth Player #####
+      div(
+        id = "b4_wrap",
+        box(
+          id = "box4",
+          width = 3,
+          status = "danger",
+          solidHeader = TRUE,
+          fluidRow(align = "center",
+                   htmlOutput("name4")),
+          fluidRow(align = "center",
+                   htmlOutput("picture4")),
+          fluidRow(align = "center",
+                   htmlOutput("avg4")),
+          fluidRow(align = "center",
+                   htmlOutput("med4"))
         )
       )
-    )
+    ),
+    
+    # Boxes need to be put in a row (or column)
+    fluidRow(div(
+      id = "point_wrap",
+      box(id = "plotPoint",
+          width = 12,
+          plotOutput("plot_pt"))
+    )),
+    
+    fluidRow(div(
+      id = "bar_wrap",
+      box(id = "plotBar",
+          width = 12,
+          plotOutput("bar_oview"))
+    ))
+  )
+)
+
+
+
+
+##########################################
+################# SERVER #################
+##########################################
+
+
+
+server <- function(input, output, session) {
+  #Make sure at least one year is checked
+  observe({
+    if (length(input$yrCheck) < min_yr) {
+      updateCheckboxGroupInput(session, "yrCheck", selected = "2022")
+    }
+  })
+  
+  ######## reactive functions #######
+  
+  p_data_n <- reactive({
+    stats %>% filter(stats$player_display_name %in% input$p_id)
+  })
+  
+  #filter for year
+  p_data <- reactive({
+    p_data_n() %>% filter(p_data_n()$season %in% input$yrCheck)
+  })
+  
+  player_lists <- reactive({
+    c(unique(p_data()$player_display_name))
+  })
+  
+  player_pics <- reactive({
+    c(unique(p_data()$headshot_url))
+  })
+  
+  y_var <- reactive({
+    input$y_stat
+  })
+  
+  y_stat_clean <- reactive({
+    col_pretty %>% filter(col_pretty$og_name == y_var())
+  })
+  
+  y_stat_name <- reactive({
+    y_stat_clean()[["new_name"]][1]
+  })
+  
+  avg_name <- reactive({
+    y_stat_clean()[["avg_name"]][1]
+  })
+  
+  med_name <- reactive({
+    y_stat_clean()[["med_name"]][1]
+  })
+  
+  ################################
+  
+  p_sum <- reactive({
+    p_data() %>%
+      group_by(p_data()$player_display_name) %>%
+      summarise_if(is.numeric, sum)
+  })
+  
+  p_sum_yr <- reactive({
+    p_data() %>%
+      group_by(p_data()$player_display_name, p_data()$season) %>%
+      summarise_if(is.numeric, sum)
+  })
+  
+  p_sum_yr_name <- reactive({
+    p_sum_yr() %>%
+      rename(new_pname = 1, new_season = 2)
+  })
+  
+  p_sum_name <- reactive({
+    p_sum() %>%
+      rename(new_pname = 1)
+  })
+  
+  p_sum_long <- reactive({
+    p_sum_name() %>%
+      pivot_longer(
+        cols = "season":"new_fantasy_points_ppr",
+        names_to = "stats",
+        values_to = "value"
+      )
+  })
+  
+  
+  p_merge_s <- reactive({
+    p_sum_long() %>% left_join(c_name, by = 'stats')
+  })
+  
+  long_f <- reactive({
+    p_merge_s() %>%
+      filter(value > 0, stats %in% col_l)
+  })
+  
+  sg <- reactive({
+    long_f() %>%
+      group_by(stats) %>%
+      mutate(perc = value / sum(value))
+  })
+  
+  p_sum_f <- reactive({
+    sg() #%>%
+    #filter(sg()$t_name != NULL)
+  })
   
   
   
+  ################################
   
-  ##########################################
-  ################# SERVER #################
-  ##########################################
+  output$bar_oview <- renderPlot({
+    ggplot(p_sum_f(),
+           aes(
+             p_sum_f()$perc,
+             y = reorder(p_sum_f()$t_name, desc(p_sum_f()$t_name)),
+             fill = p_sum_f()$new_pname
+           )) +
+      geom_col(position = position_fill(reverse = TRUE)) +
+      geom_text(
+        aes(label = paste0(p_sum_f()$value)),
+        position = position_stack(vjust = 0.5, reverse = TRUE),
+        colour = "white"
+      ) +
+      scale_x_continuous(expand = c(0, 0)) +
+      guides(fill = guide_legend(title = "")) +
+      theme(
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        legend.text = element_text(size = 12),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()
+      ) +
+      scale_fill_manual(values = c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"))
+  })
   
+  ################################
   
-  
-  server <- function(input, output, session) {
-    
-    #Make sure at least one year is checked
-    observe({
-      if(length(input$yrCheck) < min_yr){
-        updateCheckboxGroupInput(session, "yrCheck", selected= "2022")
-      }
-    })
-    
-    ######## reactive functions #######
-    
-    p_data_n <- reactive({
-      stats %>% filter(stats$player_display_name %in% input$p_id)
-    })
-    
-    #filter for year
-    p_data <- reactive({
-      p_data_n() %>% filter(p_data_n()$season %in% input$yrCheck)
-    })
-    
-    player_lists <- reactive({
-      c(unique(p_data()$player_display_name))
-    })
-    
-    player_pics <- reactive({
-      c(unique(p_data()$headshot_url))
-    })
-    
-    y_var <- reactive({
-      input$y_stat
-    })
-    
-    y_stat_clean <- reactive({
-      col_pretty %>% filter(col_pretty$og_name == y_var())
-    })
-    
-    y_stat_name <- reactive({
-      y_stat_clean()[["new_name"]][1]
-    })
-    
-    avg_name <- reactive({
-      y_stat_clean()[["avg_name"]][1]
-    })
-    
-    med_name <- reactive({
-      y_stat_clean()[["med_name"]][1]
-    })
-    
-    ################################
-    
-    p_sum <- reactive({
-      p_data() %>%
-        group_by(p_data()$player_display_name) %>%
-        summarise_if(is.numeric, sum)
-    })
-    
-    p_sum_yr <- reactive({
-      p_data() %>%
-        group_by(p_data()$player_display_name,p_data()$season) %>%
-        summarise_if(is.numeric, sum)
-    })
-    
-    p_sum_yr_name <- reactive({
-      p_sum_yr() %>% 
-        rename(new_pname = 1, new_season = 2)
-    })
-    
-    p_sum_name <- reactive({
-      p_sum() %>% 
-        rename(new_pname = 1)
-    })
-    
-    p_sum_long <- reactive({
-      p_sum_name() %>% 
-        pivot_longer(
-          cols = "season":"new_fantasy_points_ppr", 
-          names_to = "stats",
-          values_to = "value"
-          )
-      })
-    
-    #p_merge_s <- reactive({
-      #merge(x = p_sum_long(), y = c_name, 
-            #by.x = stats, by.y = f_name)
-      #})
-    
-    p_merge_s <- reactive({
-      p_sum_long() %>% left_join(c_name, by = 'stats')
-      })
-    
-    long_f <- reactive({
-      p_merge_s() %>%
-        filter(value > 0,stats %in% col_l)
-    })
-    
-    sg <- reactive({
-      long_f() %>% 
-        group_by(stats) %>% 
-        mutate(perc = value/sum(value))
-    })
-    
-    p_sum_f <- reactive({
-      sg() #%>%
-        #filter(sg()$t_name != NULL)
-    })
-    
-    
-    
-    ################################
-    
-    output$bar_oview <- renderPlot({
-      ggplot(p_sum_f(),
-             aes(p_sum_f()$perc, y = reorder(p_sum_f()$t_name,desc(p_sum_f()$t_name)), 
-                 fill = p_sum_f()$new_pname)) +
-        geom_col(position = position_fill(reverse = TRUE)) + 
-        geom_text(aes(label=paste0(p_sum_f()$value)),
-                  position=position_stack(vjust=0.5, reverse = TRUE),
-                  colour = "white") +
-        scale_x_continuous(expand = c(0, 0)) +
-        guides(fill=guide_legend(title="")) +
-        theme(panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              panel.border = element_blank(),
-              panel.background = element_blank(),
-              legend.text=element_text(size=12),
-              axis.ticks.x = element_blank(),
-              axis.text.x = element_blank(),
-              axis.text.y = element_text(size = 12),
-              axis.title.x = element_blank(),
-              axis.title.y = element_blank()) + 
-        scale_fill_manual(values=c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"))
-    })
-    
-    ################################
-    
-    #Hide/Show point plot
-    observe({
-      if(length(input$p_id) < min_yr){
-        shinyjs::hide(id = "point_wrap")
-        shinyjs::hide(id = "bar_wrap")
-      }else{
-        if("sWeek" %in% input$chartGraphs){
-          if(length(input$p_id) > 0){
-            shinyjs::show(id = "point_wrap")
-          }else{
-            shinyjs::hide(id = "point_wrap")
-          }
-        }else{
+  #Hide/Show point plot
+  observe({
+    if (length(input$p_id) < min_yr) {
+      shinyjs::hide(id = "point_wrap")
+      shinyjs::hide(id = "bar_wrap")
+    } else{
+      if ("sWeek" %in% input$chartGraphs) {
+        if (length(input$p_id) > 0) {
+          shinyjs::show(id = "point_wrap")
+        } else{
           shinyjs::hide(id = "point_wrap")
         }
-        if("oView" %in% input$chartGraphs){
-          shinyjs::show(id = "bar_wrap")
-        }else{
-          shinyjs::hide(id = "bar_wrap")
-        }
+      } else{
+        shinyjs::hide(id = "point_wrap")
       }
-    })
-    
-    #Hide/Show bar plot
-    #observe({
-      #if(input$chartGraphs == ){
-        #shinyjs::show(id = "plotBar")
-      #}else{
-        #shinyjs::hide(id = "plotBar")
-      #}
-    #})
-    
-    
-    observe({
-      if(is.na(player_lists()[1])){
-        shinyjs::hide(id = "b1_wrap")
-      }else{
-        shinyjs::show(id = "b1_wrap")
+      if ("oView" %in% input$chartGraphs) {
+        shinyjs::show(id = "bar_wrap")
+      } else{
+        shinyjs::hide(id = "bar_wrap")
       }
-    })
-    
-    observe({
-      if(is.na(player_lists()[2])){
-        shinyjs::hide(id = "b2_wrap")
-      }else{
-        shinyjs::show(id = "b2_wrap")
-      }
-    })
-    
-    observe({
-      if(is.na(player_lists()[3])){
-        shinyjs::hide(id = "b3_wrap")
-      }else{
-        shinyjs::show(id = "b3_wrap")
-      }
-    })
-    
-    observe({
-      if(is.na(player_lists()[4])){
-        shinyjs::hide(id = "b4_wrap")
-      }else{
-        shinyjs::show(id = "b4_wrap")
-      }
-    })
-    
-    ########### Box 1 ###########
-    
-    first_avg <- reactive({
-      p_data() %>% filter(p_data()$player_display_name == player_lists()[1])
-    })
-    
-    first_p <- reactive({
-      c(unique(first_avg()$headshot_url))
-    })
-    
-    output$name1 <- renderText({
-      paste("<font color=\"#FFFFFF\"><b>",player_lists()[1],"</b>")
-    })
-    
-    src1 <- reactive({
-      substring((first_p()[1]), 1)
-    })
-    
-    output$picture1 <- renderText({
-      c('<img src="',src1(),'", height="90%", width="90%">')
-    })
-    
-    output$avg1 <- renderText({
-      paste("<font color=\"#FFFFFF\">",avg_name(),": ",round(mean(first_avg()[[y_var()]]),2),sep = "","</font>")
-    })
-    
-    output$med1 <- renderText({
-      paste("<font color=\"#FFFFFF\">",med_name(),": ",round(median(first_avg()[[y_var()]]),2),sep = "","</font>")
-    })
-    
-    ########### Box 2 ###########
-    
-    second_avg <- reactive({
-      p_data() %>% filter(p_data()$player_display_name == player_lists()[2])
-    })
-    
-    second_p <- reactive({
-      c(unique(second_avg()$headshot_url))
-    })
-    
-    output$name2 <- renderText({
-      paste("<font color=\"#FFFFFF\"><b>",player_lists()[2],"</b>")
-    })
-    
-    src2 <- reactive({
-      substring((second_p()[1]), 1)
-    })
-    
-    output$picture2 <- renderText({
-      c('<img src="',src2(),'", height="90%", width="90%">')
-    })
-    
-    output$avg2 <- renderText({
-      paste("<font color=\"#FFFFFF\">",avg_name(),": ",round(mean(second_avg()[[y_var()]]),2),sep = "","</font>")
-    })
-    
-    output$med2 <- renderText({
-      paste("<font color=\"#FFFFFF\">",med_name(),": ",round(median(second_avg()[[y_var()]]),2),sep = "","</font>")
-    })
-    
-    ########### Box 3 ###########
-    
-    third_avg <- reactive({
-      p_data() %>% filter(p_data()$player_display_name == player_lists()[3])
-    })
-    
-    third_p <- reactive({
-      c(unique(third_avg()$headshot_url))
-    })
-    
-    output$name3 <- renderText({
-      paste("<font color=\"#FFFFFF\"><b>",player_lists()[3],"</b>")
-    })
-    
-    src3 <- reactive({
-      substring((third_p()[1]), 1)
-    })
-    
-    output$picture3 <- renderText({
-      c('<img src="',src3(),'", height="90%", width="90%">')
-    })
-    
-    output$avg3 <- renderText({
-      paste("<font color=\"#FFFFFF\">",avg_name(),": ",round(mean(third_avg()[[y_var()]]),2),sep = "","</font>")
-    })
-    
-    output$med3 <- renderText({
-      paste("<font color=\"#FFFFFF\">",med_name(),": ",round(median(third_avg()[[y_var()]]),2),sep = "","</font>")
-    })
-    
-    ########### Box 4 ###########
-    
-    fourth_avg <- reactive({
-      p_data() %>% filter(p_data()$player_display_name == player_lists()[4])
-    })
-    
-    fourth_p <- reactive({
-      c(unique(fourth_avg()$headshot_url))
-    })
-    
-    output$name4 <- renderText({
-      paste("<font color=\"#FFFFFF\"><b>",player_lists()[4],"</b>")
-    })
-    
-    src4 <- reactive({
-      substring((fourth_p()[1]), 1)
-    })
-    
-    output$picture4 <- renderText({
-      c('<img src="',src4(),'", height="90%", width="90%">')
-    })
-    
-    output$avg4 <- renderText({
-      paste("<font color=\"#FFFFFF\">",avg_name(),": ",round(mean(fourth_avg()[[y_var()]]),2),sep = "","</font>")
-    })
-    
-    output$med4 <- renderText({
-      paste("<font color=\"#FFFFFF\">",med_name(),": ",round(median(fourth_avg()[[y_var()]]),2),sep = "","</font>")
-    })
-    
-    ############################
-    
-    output$w18 <- renderText({
-      paste("Week 18 games have been omitted.")
-    })
-    
-    ############################
-    
-    output$plot_pt2 <- renderPlot({
-      ggplot(p_data(), aes(p_data()$week, p_data()[[y_var()]])) + 
-        geom_point(aes(fill = p_data()$player_display_name), size = 5, shape = 21) +
-        theme(legend.title=element_blank()) +
-        xlab("Week") + ylab(y_stat_name())
-    })
-    
-    #output$sea_pt <- renderPlot({
-      #ggplot(p_sum_yr_name(), aes(p_sum_yr_name()$new_season, p_sum_yr_name()[[y_var()]])) + 
-        #geom_point(aes(fill = p_sum_yr_name()$new_pname), size = 5, shape = 21) +
-        #theme(legend.title=element_blank()) +
-        #xlab("Season") + ylab(y_stat_name())
-    #})
-    
-    output$plot_pt <- renderPlot({
-      ggplot(p_data(), aes(p_data()[[y_var()]], p_data()$player_display_name)) +
-        geom_point(aes(fill = p_data()$player_display_name),size=5, shape = 21,
-                   position = position_jitter(w = 0, h = 0.01)) +
-        #scale_colour_manual(values = c("black", "black", "black", "black", "black"))+
-        guides(fill=guide_legend(title="")) +
-        theme(legend.position = "none",
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              panel.border = element_blank(),
-              panel.background = element_blank(),
-              axis.text.x = element_text(size = 12),
-              axis.text.y = element_text(size = 12),
-              axis.title.y = element_blank()) + 
-        xlab(y_stat_name()) +
-        scale_fill_manual(values=alpha(c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"),.4))
-    })
-    
-    output$sea_pt2 <- renderPlot({
-      ggplot(p_data(), aes(p_data()[[y_var()]], p_data()$player_display_name)) +
-        geom_point(aes(fill = p_data()$player_display_name),size=5, shape = 21,
-                   position = position_jitter(w = 0, h = 0.01)) +
-        #scale_colour_manual(values = c("black", "black", "black", "black", "black"))+
-        guides(fill=guide_legend(title="")) +
-        theme(legend.position = "none",
-              panel.grid.major = element_blank(),
-              panel.grid.minor = element_blank(),
-              panel.border = element_blank(),
-              panel.background = element_blank(),
-              axis.text.x = element_text(size = 12),
-              axis.text.y = element_text(size = 12),
-              axis.title.y = element_blank()) + 
-        xlab(y_stat_name()) +
-        scale_fill_manual(values=alpha(c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"),.4))
-    })
-    
-    ############################
-    
-    observeEvent(input$p_id, {
-      print(length(input$p_id))
-      if(length(input$p_id) == 4){
-        updateMultiInput(
-          session = session,
-          inputId = "p_id",
-          choices = input$p_id,
-          selected = input$p_id
-        )
-      }else{
-        updateMultiInput(
-          session = session,
-          inputId = "p_id",
-          choices = p_names,
-          selected = input$p_id
-        )
-      }
-    })
-    
-    output$res <- renderPrint({
-      input$p_id
-    })
-    
-    
-  }
+    }
+  })
   
-  shinyApp(ui = ui, server = server)
+  
+  observe({
+    if (is.na(player_lists()[1])) {
+      shinyjs::hide(id = "b1_wrap")
+    } else{
+      shinyjs::show(id = "b1_wrap")
+    }
+  })
+  
+  observe({
+    if (is.na(player_lists()[2])) {
+      shinyjs::hide(id = "b2_wrap")
+    } else{
+      shinyjs::show(id = "b2_wrap")
+    }
+  })
+  
+  observe({
+    if (is.na(player_lists()[3])) {
+      shinyjs::hide(id = "b3_wrap")
+    } else{
+      shinyjs::show(id = "b3_wrap")
+    }
+  })
+  
+  observe({
+    if (is.na(player_lists()[4])) {
+      shinyjs::hide(id = "b4_wrap")
+    } else{
+      shinyjs::show(id = "b4_wrap")
+    }
+  })
+  
+  ########### Box 1 ###########
+  
+  first_avg <- reactive({
+    p_data() %>% filter(p_data()$player_display_name == player_lists()[1])
+  })
+  
+  first_p <- reactive({
+    c(unique(first_avg()$headshot_url))
+  })
+  
+  output$name1 <- renderText({
+    paste("<font color=\"#FFFFFF\"><b>", player_lists()[1], "</b>")
+  })
+  
+  src1 <- reactive({
+    substring((first_p()[1]), 1)
+  })
+  
+  output$picture1 <- renderText({
+    c('<img src="', src1(), '", height="90%", width="90%">')
+  })
+  
+  output$avg1 <- renderText({
+    paste("<font color=\"#FFFFFF\">",
+          avg_name(),
+          ": ",
+          round(mean(first_avg()[[y_var()]]), 2),
+          sep = "",
+          "</font>")
+  })
+  
+  output$med1 <- renderText({
+    paste("<font color=\"#FFFFFF\">",
+          med_name(),
+          ": ",
+          round(median(first_avg()[[y_var()]]), 2),
+          sep = "",
+          "</font>")
+  })
+  
+  ########### Box 2 ###########
+  
+  second_avg <- reactive({
+    p_data() %>% filter(p_data()$player_display_name == player_lists()[2])
+  })
+  
+  second_p <- reactive({
+    c(unique(second_avg()$headshot_url))
+  })
+  
+  output$name2 <- renderText({
+    paste("<font color=\"#FFFFFF\"><b>", player_lists()[2], "</b>")
+  })
+  
+  src2 <- reactive({
+    substring((second_p()[1]), 1)
+  })
+  
+  output$picture2 <- renderText({
+    c('<img src="', src2(), '", height="90%", width="90%">')
+  })
+  
+  output$avg2 <- renderText({
+    paste("<font color=\"#FFFFFF\">",
+          avg_name(),
+          ": ",
+          round(mean(second_avg()[[y_var()]]), 2),
+          sep = "",
+          "</font>")
+  })
+  
+  output$med2 <- renderText({
+    paste("<font color=\"#FFFFFF\">",
+          med_name(),
+          ": ",
+          round(median(second_avg()[[y_var()]]), 2),
+          sep = "",
+          "</font>")
+  })
+  
+  ########### Box 3 ###########
+  
+  third_avg <- reactive({
+    p_data() %>% filter(p_data()$player_display_name == player_lists()[3])
+  })
+  
+  third_p <- reactive({
+    c(unique(third_avg()$headshot_url))
+  })
+  
+  output$name3 <- renderText({
+    paste("<font color=\"#FFFFFF\"><b>", player_lists()[3], "</b>")
+  })
+  
+  src3 <- reactive({
+    substring((third_p()[1]), 1)
+  })
+  
+  output$picture3 <- renderText({
+    c('<img src="', src3(), '", height="90%", width="90%">')
+  })
+  
+  output$avg3 <- renderText({
+    paste("<font color=\"#FFFFFF\">",
+          avg_name(),
+          ": ",
+          round(mean(third_avg()[[y_var()]]), 2),
+          sep = "",
+          "</font>")
+  })
+  
+  output$med3 <- renderText({
+    paste("<font color=\"#FFFFFF\">",
+          med_name(),
+          ": ",
+          round(median(third_avg()[[y_var()]]), 2),
+          sep = "",
+          "</font>")
+  })
+  
+  ########### Box 4 ###########
+  
+  fourth_avg <- reactive({
+    p_data() %>% filter(p_data()$player_display_name == player_lists()[4])
+  })
+  
+  fourth_p <- reactive({
+    c(unique(fourth_avg()$headshot_url))
+  })
+  
+  output$name4 <- renderText({
+    paste("<font color=\"#FFFFFF\"><b>", player_lists()[4], "</b>")
+  })
+  
+  src4 <- reactive({
+    substring((fourth_p()[1]), 1)
+  })
+  
+  output$picture4 <- renderText({
+    c('<img src="', src4(), '", height="90%", width="90%">')
+  })
+  
+  output$avg4 <- renderText({
+    paste("<font color=\"#FFFFFF\">",
+          avg_name(),
+          ": ",
+          round(mean(fourth_avg()[[y_var()]]), 2),
+          sep = "",
+          "</font>")
+  })
+  
+  output$med4 <- renderText({
+    paste("<font color=\"#FFFFFF\">",
+          med_name(),
+          ": ",
+          round(median(fourth_avg()[[y_var()]]), 2),
+          sep = "",
+          "</font>")
+  })
+  
+  ############################
+  
+  output$w18 <- renderText({
+    paste("Week 18 games have been omitted.")
+  })
+  
+  ############################
+  
+  output$plot_pt <- renderPlot({
+    ggplot(p_data(), aes(p_data()[[y_var()]], p_data()$player_display_name)) +
+      geom_point(
+        aes(fill = p_data()$player_display_name),
+        size = 5,
+        shape = 21,
+        position = position_jitter(w = 0, h = 0.01)
+      ) +
+      guides(fill = guide_legend(title = "")) +
+      theme(
+        legend.position = "none",
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12),
+        axis.title.y = element_blank()
+      ) +
+      xlab(y_stat_name()) +
+      scale_fill_manual(values = alpha(
+        c("#003f5c", "#58508d", "#bc5090", "#ff6361", "#ffa600"),
+        .4
+      ))
+  })
+  
+  
+  ############################
+  
+  #This handles the multi input and only allows 4 players to be chosen
+  
+  remove_choice  <- reactiveValues(x = 0)
+  
+  observeEvent(input$p_id, {
+    if (length(input$p_id) > 3) {
+      if (remove_choice$x == 0) {
+        remove_choice$x <- 1
+      }
+    } else{
+      if (remove_choice$x == 1) {
+        remove_choice$x <- 0
+      }
+    }
+  })
+  
+  observeEvent(remove_choice$x, {
+    if (remove_choice$x == 1) {
+      updateMultiInput(
+        session = session,
+        inputId = "p_id",
+        choices = input$p_id,
+        selected = input$p_id
+      )
+    } else{
+      updateMultiInput(
+        session = session,
+        inputId = "p_id",
+        choices = p_names,
+        selected = input$p_id
+      )
+    }
+  })
+  
+  
+}
 
+shinyApp(ui = ui, server = server)
 
